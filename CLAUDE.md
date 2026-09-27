@@ -41,7 +41,9 @@ Frontend (`cd frontend`):
 
 ## Frontend
 
-- Cliente HTTP en `src/api/` con `fetch`; base URL `VITE_API_URL` (por defecto `http://localhost:3333`). Las respuestas del backend vienen envueltas en `{ data }`.
+- Cliente HTTP en `src/api/` con `fetch`; base URL `VITE_API_URL` (por defecto `http://localhost:3333`). Las respuestas del backend vienen envueltas en `{ data }`. `src/api/client.ts` (`apiRequest`) desenvuelve `{ data }`, añade el `Authorization: Bearer` y lanza `ApiError { status, errors }` (`status` 0 = sin conexión). Los módulos de dominio (`src/api/auth.ts`) traducen esos errores a mensajes para el usuario.
+- Sesión: el token se guarda en `localStorage` mediante `src/auth/session.ts`.
+- Navegación sin router: `App.tsx` elige la vista según `location.hash` (`#/login`, `#/signup`, `#/profile`) y aplica la guardia de sesión.
 - Componentes en `src/components/`, cada uno con su `.css` al lado.
 
 ## Convenciones

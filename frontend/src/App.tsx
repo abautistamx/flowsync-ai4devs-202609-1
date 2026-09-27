@@ -1,121 +1,69 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useCallback, useEffect, useState } from 'react'
+import LoginForm from './components/LoginForm'
+import SignupForm from './components/SignupForm'
+import ProfileView from './components/ProfileView'
+import { clearToken, getToken, setToken } from './auth/session'
 import './App.css'
 
+type View = 'login' | 'signup' | 'profile'
+
+const VIEW_HASHES: Record<View, string> = {
+  login: '#/login',
+  signup: '#/signup',
+  profile: '#/profile',
+}
+
+function viewFromHash(hash: string): View | undefined {
+  return (Object.keys(VIEW_HASHES) as View[]).find((view) => VIEW_HASHES[view] === hash)
+}
+
+/**
+ * Aplica la guardia de sesión: sin token solo se accede a login/signup;
+ * con token, login/signup redirigen al perfil.
+ */
+function resolveView(requested: View | undefined, hasToken: boolean): View {
+  if (hasToken) return 'profile'
+  return requested === 'signup' ? 'signup' : 'login'
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [token, setSessionToken] = useState<string | null>(getToken)
+  const [requestedView, setRequestedView] = useState<View | undefined>(() =>
+    viewFromHash(window.location.hash)
+  )
+
+  useEffect(() => {
+    const handleHashChange = () => setRequestedView(viewFromHash(window.location.hash))
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  const view = resolveView(requestedView, token !== null)
+
+  // Mantiene la URL alineada con la vista que realmente se muestra.
+  useEffect(() => {
+    if (window.location.hash !== VIEW_HASHES[view]) {
+      window.history.replaceState(null, '', VIEW_HASHES[view])
+    }
+  }, [view])
+
+  const handleAuthenticated = useCallback((newToken: string) => {
+    setToken(newToken)
+    setSessionToken(newToken)
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    clearToken()
+    setSessionToken(null)
+    setRequestedView('login')
+  }, [])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <section id="center">
+      {view === 'login' && <LoginForm onSuccess={handleAuthenticated} />}
+      {view === 'signup' && <SignupForm onSuccess={handleAuthenticated} />}
+      {view === 'profile' && token && <ProfileView token={token} onLogout={handleLogout} />}
+    </section>
   )
 }
 
