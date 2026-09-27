@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 
 const input = JSON.parse(fs.readFileSync(0, 'utf8'))
 
@@ -37,9 +37,10 @@ if (!workingDir) {
 
 // Formatea el fichero editado con Prettier (solo frontend) antes de lintar.
 // --ignore-unknown evita fallar con extensiones que Prettier no soporta.
+// execFileSync (sin shell) para que la ruta nunca se interprete como comando.
 if (relativePath.startsWith('frontend/') && fs.existsSync(absolutePath)) {
   try {
-    execSync(`npx prettier --write --ignore-unknown ${JSON.stringify(absolutePath)}`, {
+    execFileSync('npx', ['prettier', '--write', '--ignore-unknown', absolutePath], {
       cwd: workingDir,
       stdio: 'inherit',
     })
