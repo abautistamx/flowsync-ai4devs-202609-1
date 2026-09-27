@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import LoginForm from './components/LoginForm'
 import SignupForm from './components/SignupForm'
 import ProfileView from './components/ProfileView'
-import { clearToken, getToken, setToken } from './auth/session'
+import { clearToken, getToken, setToken, TOKEN_KEY } from './auth/session'
 import './App.css'
 
 type View = 'login' | 'signup' | 'profile'
@@ -38,7 +38,16 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  const view = resolveView(requestedView, token !== null)
+  // Sincroniza la sesión con otras pestañas (login/logout hecho en otra pestaña).
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === TOKEN_KEY || event.key === null) setSessionToken(getToken())
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  const view = resolveView(requestedView, Boolean(token))
 
   // Mantiene la URL alineada con la vista que realmente se muestra.
   useEffect(() => {

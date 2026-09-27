@@ -1,8 +1,11 @@
-const TOKEN_KEY = 'flowsync.token'
+export const TOKEN_KEY = 'flowsync.token'
 
+/**
+ * Devuelve el token guardado; una cadena vacía cuenta como sesión ausente.
+ */
 export function getToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(TOKEN_KEY) || null
   } catch {
     return null
   }
