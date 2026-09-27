@@ -4,61 +4,76 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Proyecto
 
-FlowSync: práctica de curso de gestión de tareas en equipo. Monorepo sin workspaces con dos paquetes independientes (cada uno con su `package.json` y `node_modules`):
+FlowSync: gestión de tareas en equipo. Monorepo sin workspaces (cada paquete tiene su propio `package.json` y `node_modules`; los comandos se ejecutan dentro de cada carpeta):
 
-- `backend/`: API REST en AdonisJS 7 (TypeScript, ESM), Lucid ORM sobre SQLite (`backend/tmp/db.sqlite3`), VineJS para validación, Japa para tests. Puerto 3333.
-- `frontend/`: React 19 + Vite 8 + TypeScript, lint con oxlint. Puerto 5173. Ahora mismo es la plantilla de Vite sin tocar: no hay router, cliente HTTP ni gestión de estado todavía.
-
-Todo el texto del repo (docs, skills, commits) está en español.
+- `backend/`: API en AdonisJS 7 + TypeScript, Lucid ORM sobre SQLite (`better-sqlite3`, fichero en `backend/tmp/db.sqlite3`). Puerto 3333.
+- `frontend/`: React 19 + Vite + TypeScript. Puerto 5173. Sin router ni librería de estado.
 
 ## Comandos
 
-Backend (desde `backend/`):
+Backend (`cd backend`):
 
-```bash
-npm install && cp .env.example .env && node ace generate:key   # primera vez
-node ace migration:run      # aplica migraciones y regenera database/schema.ts
-npm run dev                 # node ace serve --hmr
-npm test                    # node ace test (todas las suites)
-node ace test unit          # una suite (unit | functional)
-node ace test --files tests/functional/auth.spec.ts   # un archivo
-node ace test --tests "nombre del test"               # un test por título
-npm run lint                # eslint
-npm run typecheck           # tsc --noEmit
-npm run format              # prettier (config @adonisjs/prettier-config)
-```
+- Setup inicial: `npm install && cp .env.example .env && node ace generate:key && node ace migration:run`
+- Dev server (HMR): `npm run dev`
+- Tests (Japa): `npm run test`
+  - Una suite: `node ace test unit` / `node ace test functional`
+  - Un fichero: `node ace test --files=tests/functional/auth.spec.ts`
+  - Un test por título: `node ace test --tests="nombre del test"`
+- Lint: `npm run lint` (ESLint) · Formato: `npm run format` (Prettier) · Tipos: `npm run typecheck`
+- Nueva migración: `node ace make:migration <nombre>`, luego `node ace migration:run`
 
-Frontend (desde `frontend/`, en otra terminal con el backend corriendo):
+Frontend (`cd frontend`):
 
-```bash
-npm install
-npm run dev
-npm run build               # tsc -b && vite build
-npm run lint                # oxlint
-```
-
-El frontend no tiene script de tests ni configuración de Prettier propia.
+- Dev: `npm run dev` · Build (incluye `tsc -b`): `npm run build`
+- Lint: `npm run lint` (usa **oxlint**, no ESLint) · Formato: `npm run format` (Prettier, misma config que el backend en `.prettierrc.json`)
 
 ## Arquitectura del backend
 
-- **Imports con alias** vía `imports` de `package.json`: `#controllers/*`, `#models/*`, `#validators/*`, `#transformers/*`, `#middleware/*`, `#database/*`, `#start/*`, `#config/*`, etc. Se importan con extensión `.js` resuelta a `.ts`. Úsalos en lugar de rutas relativas.
-- **Rutas** en `start/routes.ts`, todas bajo `/api/v1`. Los controladores se referencian como `controllers.NewAccount` desde `#generated/controllers`, un índice que genera AdonisJS en `.adonisjs/server/` (hook `indexEntities` de `adonisrc.ts`). No edites `.adonisjs/` a mano: se regenera al arrancar/compilar.
-  - `POST /api/v1/auth/signup`, `POST /api/v1/auth/login` (públicas)
-  - `GET /api/v1/account/profile`, `POST /api/v1/account/logout` (con `middleware.auth()`)
-- **Autenticación**: guard por defecto `api` = access tokens opacos en BD (`User.accessTokens`, `DbAccessTokensProvider`), enviados como `Authorization: Bearer <token>`. Signup y login devuelven `{ data: { user, token } }`. Existe también un guard `web` de sesión, pero la API usa tokens.
-- **Modelos y esquema**: `database/schema.ts` se **autogenera** desde las migraciones (`node ace migration:run`); no se edita a mano. Los modelos extienden la clase generada, p. ej. `User extends compose(UserSchema, withAuthFinder(hash))`. Personalizaciones de tipos de columnas van en `database/schema_rules.ts`.
-- **Respuestas**: `providers/api_provider.ts` añade `ctx.serialize()`, que envuelve todo en `{ data: ... }` (y metadatos de paginación de Lucid). Los controladores devuelven `serialize(XTransformer.transform(model))`; los transformers (`app/transformers/`, `BaseTransformer` con `this.pick(...)`) definen qué campos se exponen. No devuelvas modelos crudos.
-- **Validación**: validadores VineJS en `app/validators/` (`vine.create({...})`), usados con `request.validateUsing(...)` en el controlador.
-- **Middleware global** (`start/kernel.ts`): `force_json_response` fuerza `Accept: application/json` (errores siempre en JSON), CORS, bodyparser, session, shield, `silent_auth` (hace `auth.check()` en cada request).
-- **CORS**: en desarrollo acepta cualquier origen; en producción la allowlist está vacía (`config/cors.ts`).
-- **Cliente tipado**: `generateRegistry()` de Tuyau genera `.adonisjs/client/registry` con los tipos de rutas; el backend lo exporta como `backend/registry` y `backend/data`, y los tests lo usan para tipar el `apiClient`.
+- **Imports con alias** `#controllers/*`, `#models/*`, `#validators/*`, `#transformers/*`, etc. (definidos en `backend/package.json` → `imports`). Usarlos en lugar de rutas relativas.
+- **Esquema generado desde migraciones**: `node ace migration:run` regenera `database/schema.ts` (clases `UserSchema`, `AuthAccessTokenSchema`…). Los modelos extienden esas clases (`User extends compose(UserSchema, withAuthFinder(hash))`) y solo añaden relaciones, getters y lógica. Las columnas se añaden vía migración, nunca en el modelo ni en `schema.ts`. Reglas de mapeo de tipos en `database/schema_rules.ts`.
+- **Código generado en `.adonisjs/`** (hook `init` en `adonisrc.ts`): `#generated/controllers` indexa los controllers y las rutas los referencian como `[controllers.AccessTokens, 'store']`; también se genera el registry de Tuyau (`.adonisjs/client`) que tipa rutas para los tests. Tras crear un controller o transformer, se regenera al arrancar `npm run dev`/`node ace`.
+- **Rutas** en `start/routes.ts`, todas bajo `/api/v1`. Auth: `POST auth/signup`, `POST auth/login`; protegidas con `middleware.auth()`: `GET account/profile`, `POST account/logout`.
+- **Respuestas**: `providers/api_provider.ts` añade `ctx.serialize()`, que envuelve la salida en `{ data: ... }` (y metadatos de paginación de Lucid). Los controllers devuelven `serialize(XTransformer.transform(model))`. Los transformers extienden `BaseTransformer` y usan `this.pick(this.resource, [...])` en `toObject()`.
+- **Validación**: validadores VineJS en `app/validators/`, creados con `vine.create({...})` y usados con `request.validateUsing(validator)`.
+- **Auth**: access tokens opacos (`DbAccessTokensProvider` en el modelo `User`). El cliente envía `Authorization: Bearer <token>`. `force_json_response_middleware` fuerza respuestas JSON.
+- **CORS**: en desarrollo acepta cualquier origen (`config/cors.ts`); en otros entornos está cerrado.
+- **Tests**: suites `unit` (`tests/unit/**/*.spec.ts`) y `functional` (`tests/functional/**/*.spec.ts`, levantan el servidor HTTP). Plugins en `tests/bootstrap.ts`: `apiClient`, `authApiClient` (`.loginAs(user)`), `dbAssertions`. Usa `.env.test`.
 
-## Tests del backend
+## Frontend
 
-Japa con suites definidas en `adonisrc.ts`: `unit` (`tests/unit/**/*.spec.ts`, timeout 2 s) y `functional` (`tests/functional/**/*.spec.ts`, timeout 30 s; arranca el servidor HTTP). Plugins en `tests/bootstrap.ts`: `assert`, `apiClient`, `dbAssertions`, `sessionApiClient`, `authApiClient` (permite `.loginAs(user)`). `.env.test` usa `SESSION_DRIVER=memory`. Todavía no hay ningún test escrito.
+- Cliente HTTP en `src/api/` con `fetch`; base URL `VITE_API_URL` (por defecto `http://localhost:3333`). Las respuestas del backend vienen envueltas en `{ data }`. `src/api/client.ts` (`apiRequest`) desenvuelve `{ data }`, añade el `Authorization: Bearer` y lanza `ApiError { status, errors }` (`status` 0 = sin conexión). Los módulos de dominio (`src/api/auth.ts`) traducen esos errores a mensajes para el usuario.
+- Sesión: el token se guarda en `localStorage` mediante `src/auth/session.ts`.
+- Navegación sin router: `App.tsx` elige la vista según `location.hash` (`#/login`, `#/signup`, `#/profile`) y aplica la guardia de sesión.
+- Componentes en `src/components/`, cada uno con su `.css` al lado.
 
-## Harness de Claude Code
+## Convenciones
 
-- `.mcp.json`: servidor MCP de Atlassian (Jira), usado por la skill `/priority-ticket`.
-- Skills en `.claude/skills/`: `/priority-ticket` (toma el ticket «Por hacer» de mayor prioridad, planifica y lo mueve por el tablero) y `/commit` (commit convencional `tipo(scope): descripción` a partir de lo staged).
-- Subagente `.claude/agents/adversarial-reviewer.md`: revisor read-only que intenta refutar un PR.
+- Los cambios de esquema de base de datos deben hacerse mediante migrations.
+- Nunca editar `database/schema.ts` directamente.
+- La validación de entrada debe realizarse con VineJS.
+- No realizar validación manual en los controllers.
+- Las respuestas de API deben pasar por un Transformer.
+- No serializar directamente los modelos.
+- Usar Luxon `DateTime` para fechas.
+- Respetar ESLint y Prettier (backend) y oxlint y Prettier (frontend).
+
+## Restricciones
+
+- No introducir dependencias nuevas sin justificarlas.
+- Antes de modificar código, revisar las convenciones existentes del proyecto.
+
+## Harness
+
+- `.claude/settings.json` define un hook `PostToolUse` (Edit/Write) que ejecuta `npm run lint` en `backend/` o `frontend/` según el fichero editado (en `frontend/` formatea antes el fichero con Prettier); si el lint falla, el hook devuelve error y hay que corregirlo.
+
+## Comprobaciones
+
+- Backend: `npm run test` y `npm run typecheck`
+- Lint/formato: `npm run lint` en cada paquete
+
+## Reglas de proceso
+- Antes de tocar código: crear una rama nueva (`git checkout -b feat/<slug>`). Nunca commitear directo en `main`/`s1/start`.
+- Al cerrar la tarea: usar la skill `/commit`, luego `gh pr create` con una descripción completa de los cambios en el cuerpo del PR.
+- Después de abrir el PR: usar el subagente `adversarial-reviewer` sobre él, antes de darlo por terminado.
+- No repitas ese resumen en el chat: la sesión se va a perder, el PR no. Responde solo con la URL del PR.
+- Ejecuta pruebas e2e usando la extension de Chrome, y finaliza agregando un gif del recorrido en un nuevo comentario del PR github.

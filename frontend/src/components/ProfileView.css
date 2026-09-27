@@ -1,0 +1,78 @@
+.profile-page {
+  flex-grow: 1;
+  display: flex;
+  place-content: center;
+  place-items: center;
+  padding: 32px 20px;
+  box-sizing: border-box;
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-card h1 {
+  font-size: 28px;
+  margin: 0 0 8px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid var(--accent-border);
+}
+
+.profile-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  text-align: left;
+}
+
+.profile-details dt {
+  font-size: 14px;
+}
+
+.profile-details dd {
+  margin: 0;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+
+.profile-error {
+  margin: 0;
+  color: #c62828;
+}
+
+.profile-logout {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  color: var(--text-h);
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-logout:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.profile-logout:not(:disabled):hover {
+  border-color: var(--accent-border);
+}
