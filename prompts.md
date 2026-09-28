@@ -114,3 +114,17 @@ Sí, añade los prompts a prompts.md
 ```
 Esta es mi línea 3 3. Exclusión de la que menos seguro estoy: punto 7. La incluiría si en la prueba se observa que el equipo necesita distinguir qué se movió desde la última visita para conocer el avance sin preguntar, investigar o interrumpir. El valor que daría este punto es identificar los cambios ocurridos desde la última visita
 ```
+
+## Prompt 10
+
+**Modelo:** Opus 5.5
+**Herramienta:** Claude Code
+
+```
+Sí, reescribe la línea 3 manteniendo mi decisión de excluirla. Quiero que quede explícita la tensión entre lo que pide la ficha —“llego por la mañana o vuelvo de una reunión y veo qué se ha movido”— y mi criterio de mantener el alcance mínimo, ya que los puntos que permanecen permiten conocer el responsable, el estado y los cambios sin refrescar.
+También cambia la referencia “punto 7” por el nombre de la capacidad: “Distinguir qué se ha movido desde la última visita”.
+
+No cambies el resto del criterio ni añadas una tercera exclusión.
+```
+
+**Qué salió:** tras la revisión adversarial, reescribió la línea 3 con los dos polos en tensión y el nombre de la capacidad en vez de "punto 7".
