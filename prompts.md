@@ -106,6 +106,8 @@ Escribe la línea 2 así y la 3 la redacto yo
 Sí, añade los prompts a prompts.md
 ```
 
+**Qué salió:** se añadieron los prompts a prompts.md.
+
 ## Prompt 9
 
 **Modelo:** Opus 5.5
@@ -114,6 +116,8 @@ Sí, añade los prompts a prompts.md
 ```
 Esta es mi línea 3 3. Exclusión de la que menos seguro estoy: punto 7. La incluiría si en la prueba se observa que el equipo necesita distinguir qué se movió desde la última visita para conocer el avance sin preguntar, investigar o interrumpir. El valor que daría este punto es identificar los cambios ocurridos desde la última visita
 ```
+
+**Qué salió:** se utilizó mi propuesta de línea 3 sobre excluir “Distinguir qué se movió desde la última visita”, incluyendo la condición de reincorporarla si durante la prueba se observa que el equipo necesita distinguir qué se movió desde la última visita para conocer el avance sin preguntar, investigar o interrumpir.
 
 ## Prompt 10
 
@@ -128,3 +132,18 @@ No cambies el resto del criterio ni añadas una tercera exclusión.
 ```
 
 **Qué salió:** tras la revisión adversarial, reescribió la línea 3 con los dos polos en tensión y el nombre de la capacidad en vez de "punto 7".
+
+## Prompt 11
+
+**Modelo:** Opus 5.5
+**Herramienta:** Claude Code
+
+```
+Añade el apartado “Qué salió” a los prompts 8 y 9 usando exactamente lo que quedó registrado:
+
+Prompt 8: se añadieron los prompts a prompts.md.
+
+Prompt 9: se utilizó mi propuesta de línea 3 sobre excluir “Distinguir qué se movió desde la última visita”, incluyendo la condición de reincorporarla si durante la prueba se observa que el equipo necesita distinguir qué se movió desde la última visita para conocer el avance sin preguntar, investigar o interrumpir.
+
+No modifiques el texto original de los prompts.
+```
