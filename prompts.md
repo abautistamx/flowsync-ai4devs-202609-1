@@ -22,14 +22,48 @@ Borra el ejemplo de abajo cuando escribas el primero.
 
 ## Prompt 1
 
-**Modelo:** Opus 1M xHigh
+**Modelo:** Opus 5.5 Medium
 **Herramienta:** Claude Code
 
 ```
-Este es el ejemplo. Bórralo.
 
-El prompt va aquí dentro, entero y con sus saltos de línea,
-para que se sepa dónde empieza y dónde acaba.
+Quiero documentar el comportamiento actual del vertical de cuentas y acceso de este proyecto.
+Explora el repositorio y localiza todo lo necesario para entender el comportamiento observable de:
+
+- registro
+- inicio de sesión
+- sesión
+- perfil
+- protección de acceso
+Considera tanto backend como frontend.
+No modifiques ningún archivo.
+No implementes cambios.
+No corrijas bugs.
+Primero quiero que explores el código y me indiques qué partes relevantes has encontrado y qué comportamiento observable identificas.
+
 ```
 
-**Qué salió:** (opcional, una línea) funcionó a la primera / tuve que insistir / me inventó una ruta que no existe.
+**Qué salió:** Me dió bastante información para poder validar los requisitos
+
+
+## Prompt 2
+
+**Modelo:** Opus 5.5 Medium
+**Herramienta:** Claude Code
+
+```
+
+Ahora, a partir de la exploración que acabas de hacer, escribe un primer borrador de la spec del comportamiento actual del vertical de cuentas y acceso.
+El alcance es únicamente:
+
+- registro
+- inicio de sesión
+- sesión
+- perfil
+- protección de acceso
+Debe cubrir tanto el comportamiento observable de la API como el comportamiento observable en la interfaz.
+No describas implementación interna. No incluyas nombres de archivos, clases, funciones, controladores, componentes ni rutas de código. Describe únicamente lo que una persona o un cliente de la API puede observar.
+
+```
+
+**Qué salió:** Aquí me dio información más exacta de lo que solicita el ejercicio
