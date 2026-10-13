@@ -5,8 +5,11 @@ import testUtils from '@adonisjs/core/services/test_utils'
 /**
  * Lo que cada tarea muestra de su responsable. Cubre los tres scenarios del
  * requisito homónimo de `openspec/specs/tasks/spec.md`: el responsable con
- * nombre, que no se filtren datos de cuenta (ni suelta ni en la lista) y el
- * responsable sin nombre.
+ * nombre, que no se filtren datos de cuenta y el responsable sin nombre.
+ *
+ * Cada scenario se comprueba sobre las tres respuestas que devuelven una tarea
+ * (la creación, la tarea suelta y la lista) y se afirma sobre las tres a la vez,
+ * para que un fallo en una no esconda lo que pasa en las otras.
  */
 test.group('Tasks | responsable', (group) => {
   group.each.setup(() => testUtils.db().withGlobalTransaction())
@@ -21,77 +24,83 @@ test.group('Tasks | responsable', (group) => {
     return response.body().data.token as string
   }
 
-  async function crearTarea(client: any, token: string, title = 'Revisar el informe') {
-    const response = await client
+  /**
+   * Crea una tarea y devuelve su `assignee` tal como llega en cada una de las
+   * tres respuestas que la incluyen.
+   */
+  async function responsables(client: any, token: string) {
+    const creacion = await client
       .post('/api/v1/tasks')
       .header('Authorization', `Bearer ${token}`)
-      .json({ title })
+      .json({ title: 'Revisar el informe' })
+    creacion.assertStatus(201)
 
-    return response.body().data.id as number
-  }
-
-  test('el responsable incluye su nombre e iniciales', async ({ client, assert }) => {
-    const token = await sesion(client, 'Ada Lovelace')
-    const id = await crearTarea(client, token)
-
-    const response = await client
-      .get(`/api/v1/tasks/${id}`)
-      .qs({ today: hoy })
-      .header('Authorization', `Bearer ${token}`)
-
-    response.assertStatus(200)
-
-    const assignee = response.body().data.assignee
-    assert.equal(assignee.fullName, 'Ada Lovelace')
-    assert.equal(assignee.initials, 'AL')
-  })
-
-  test('el responsable no expone el email ni las fechas de su cuenta', async ({
-    client,
-    assert,
-  }) => {
-    const token = await sesion(client, 'Ada Lovelace')
-    const id = await crearTarea(client, token)
+    const id = creacion.body().data.id
 
     const suelta = await client
       .get(`/api/v1/tasks/${id}`)
       .qs({ today: hoy })
       .header('Authorization', `Bearer ${token}`)
+    suelta.assertStatus(200)
 
     const lista = await client.get('/api/v1/tasks').header('Authorization', `Bearer ${token}`)
-
-    suelta.assertStatus(200)
     lista.assertStatus(200)
 
     const enLista = lista.body().data.find((tarea: any) => tarea.id === id)
-    assert.exists(enLista)
 
-    for (const assignee of [suelta.body().data.assignee, enLista.assignee]) {
-      assert.notProperty(assignee, 'email')
-      assert.notProperty(assignee, 'password')
-      assert.notProperty(assignee, 'createdAt')
-      assert.notProperty(assignee, 'updatedAt')
+    return {
+      creacion: creacion.body().data.assignee,
+      suelta: suelta.body().data.assignee,
+      lista: enLista?.assignee,
     }
+  }
+
+  function porRespuesta<T>(assignees: Record<string, any>, leer: (assignee: any) => T) {
+    return Object.fromEntries(
+      Object.entries(assignees).map(([respuesta, assignee]) => [respuesta, leer(assignee)])
+    )
+  }
+
+  test('el responsable incluye su nombre e iniciales', async ({ client, assert }) => {
+    const token = await sesion(client, 'Ada Lovelace')
+    const assignees = await responsables(client, token)
+
+    const esperado = { fullName: 'Ada Lovelace', initials: 'AL' }
+
+    assert.deepEqual(
+      porRespuesta(assignees, (a) => ({ fullName: a?.fullName, initials: a?.initials })),
+      { creacion: esperado, suelta: esperado, lista: esperado }
+    )
   })
 
-  test('un responsable sin nombre conserva sus iniciales y no expone el email', async ({
+  test('el responsable solo trae id, nombre e iniciales', async ({ client, assert }) => {
+    const token = await sesion(client, 'Ada Lovelace')
+    const assignees = await responsables(client, token)
+
+    const esperado = ['fullName', 'id', 'initials']
+
+    assert.deepEqual(
+      porRespuesta(assignees, (a) => Object.keys(a ?? {}).sort()),
+      { creacion: esperado, suelta: esperado, lista: esperado }
+    )
+  })
+
+  test('un responsable sin nombre llega con nombre nulo y con iniciales', async ({
     client,
     assert,
   }) => {
     const token = await sesion(client, null)
-    const id = await crearTarea(client, token)
+    const assignees = await responsables(client, token)
 
-    const response = await client
-      .get(`/api/v1/tasks/${id}`)
-      .qs({ today: hoy })
-      .header('Authorization', `Bearer ${token}`)
+    const esperado = { fullName: null, conIniciales: true, conEmail: false }
 
-    response.assertStatus(200)
-
-    const assignee = response.body().data.assignee
-    assert.isNull(assignee.fullName)
-    assert.isString(assignee.initials)
-    assert.isNotEmpty(assignee.initials)
-    assert.notProperty(assignee, 'email')
+    assert.deepEqual(
+      porRespuesta(assignees, (a) => ({
+        fullName: a?.fullName,
+        conIniciales: typeof a?.initials === 'string' && a.initials.length > 0,
+        conEmail: a !== undefined && 'email' in a,
+      })),
+      { creacion: esperado, suelta: esperado, lista: esperado }
+    )
   })
 })
