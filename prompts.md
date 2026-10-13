@@ -32,3 +32,31 @@ Lo que cada tarea muestra de su responsable
 **Qué salió:** (opcional, una línea) Leyo un archivo y modifico un archivo que genere previamente
 
 
+## Prompt 2
+
+**Modelo:** Opus 5.5 1M M
+**Herramienta:** Claude Code
+
+```
+Rellené los prompts.md y abre el PR
+```
+
+
+## Prompt 3
+
+**Modelo:** Opus 5.5 1M M
+**Herramienta:** Claude Code
+
+```
+¿Qué encontró el revisor?
+```
+
+## Prompt 7
+
+**Modelo:** Opus 5.5 1M M
+**Herramienta:** Claude Code
+
+```
+Sí, aplica los puntos 1 a 4 y súbelo
+```
+

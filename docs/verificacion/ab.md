@@ -16,4 +16,4 @@ Ejecución: `node ace test functional --files=assignee` → 1 passed, 2 failed. 
 
 Cuántos scenarios creías cubiertos antes de mirar, y cuántos lo estaban. 60, niguno
 El scenario en el que no supiste si faltaba un test o faltaba la regla en la spec.  Le faltaba la egla en la spec
-Algo que el scenario no determinaba y tuviste que decidir al escribir el test. No aseguraba lo del email
+Algo que el scenario no determinaba y tuviste que decidir al escribir el test. No aseguraba lo del email.
